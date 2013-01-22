@@ -1,9 +1,35 @@
+-- Tell what you are doing now
+
 tell application "System Events"
-set frontApp to name of first application process whose frontmost is true
+  set frontApp to name of first application process whose frontmost is true
 end tell
-tell application frontApp
-if the (count of windows) is not 0 then
-  set window_name to name of front window
-end if
-end tell
+
+try
+  tell application frontApp
+    if the (count of windows) is not 0 then
+      set window_title to name of front window
+    end if
+  end tell
+on error errmsg number errnum
+  -- Know Errors:
+  -- File WinAppHelper wasn’t found. (-43)
+  -- Microsoft Messenger got an error: Connection is invalid. (-609)
+  -- Google Chrome got an error: AppleEvent timed out. (-1712)
+  -- VirtualBoxVM got an error: every window doesn’t understand the count message. (-2700)
+  -- The variable window_title is not defined. (-2753)
+  if {-43, -609, -1704, -1708, -1712, -2700, -2753, -2741} does not contain errnum
+    error errmsg
+  end if
+  set window_title to ""
+end try
+
+set theDate to (do shell script "date '+%Y/%m/%d %H:%M'")
+set theIp to do shell script "/sbin/ifconfig en0 | grep 'inet ' | awk '{print $2}'"
+set theSsid to do shell script "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resources/airport -I | grep -E '\\<SSID\\>' | awk '{print $2}'"
+
+if theIp = "" then set theIp to "-"
+if theSsid = "" then set theSsid to "-"
+
+-- <format-id> <ip> <ssid> <date> <appname> <window-title>
+"" & theDate & " || " & frontApp & ": " & window_title
 
